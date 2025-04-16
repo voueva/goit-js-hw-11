@@ -1,11 +1,8 @@
 import iziToast from "izitoast";
 import "izitoast/dist/css/iziToast.min.css";
-
 import SimpleLightbox from "simplelightbox";
 import "simplelightbox/dist/simple-lightbox.min.css";
-
 import { getImageList } from './js/pixabay-api'
-
 
 const searchInput = document.querySelector('#searchInput');
 const secrhButton = document.querySelector('#secrhButton');
