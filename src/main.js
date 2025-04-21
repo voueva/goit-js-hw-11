@@ -1,72 +1,81 @@
-import iziToast from "izitoast";
-import "izitoast/dist/css/iziToast.min.css";
-import SimpleLightbox from "simplelightbox";
-import "simplelightbox/dist/simple-lightbox.min.css";
-import { getImageList } from './js/pixabay-api'
+
+
+import { getImageList, per_page } from './js/pixabay-api'
+import { createGallery, clearGallery, showLoader, hideLoader, showLoadMoreButton, hideLoadMoreButton, scrollBy } from './js/render-functions'
 
 const searchInput = document.querySelector('#searchInput');
-const secrhButton = document.querySelector('#secrhButton');
-const galleryList = document.querySelector('.gallery');
+const searchForm = document.querySelector('#searchForm');
+const loadButton = document.querySelector('.load-button');
 
-const lightbox = new SimpleLightbox('.gallery a', {
-    captionsData: 'alt',
-    captionDelay: 250,
-});
+let currentPage = 1;
+let currentQuery = '';
 
-secrhButton.addEventListener('click', () => {
-    const q = searchInput.value.replace(' ', '+');
+async function showImages(currentQuery, currentPage) {
+    try {
+        const res = await getImageList(currentQuery, currentPage);
+        const images = res.data.hits;
 
-    galleryList.innerHTML = '';
-    for (let i = 0; i < 20; i++) {
-        galleryList.innerHTML += `
-            <li class="gallery-item gallery-item-loader">
-                <div class="loader"></div>
-            </li>
-        `;
+        if (images.length === 0 && currentPage === 1) {
+            iziToast.info({
+                title: 'Немає результатів',
+                message: 'Спробуйте інший запит.',
+            });
+            hideLoadMoreButton();
+            hideLoader();
+            return;
+        }
+
+        createGallery(images);
+
+        if (res.data.total > currentPage * per_page) {
+            showLoadMoreButton();
+        } else {
+            iziToast.info({
+                title: 'Більше зображень немає',
+                message: 'Ви переглянули всі результати.',
+            });
+        }
+    } catch (error) {
+        iziToast.error({
+            title: 'Помилка',
+            message: 'Не вдалося завантажити зображення.',
+        });
+
+        hideLoadMoreButton();
+    } finally {
+        hideLoader();
+    }
+}
+
+searchForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const q = searchInput.value.trim();
+    if (q === '') {
+        iziToast.warning({
+            title: 'Увага',
+            message: 'Будь ласка, введіть пошуковий запит',
+        });
+        return;
     }
 
-    getImageList(q)
-        .then(res => {
-            galleryList.innerHTML = '';
+    hideLoadMoreButton();
+    clearGallery();
+    showLoader();
 
-            const galleryMarkup = res.data.hits
-                .map(({ previewURL, largeImageURL, likes, views, comments, downloads}) =>`
-                    <li class="gallery-item">
-                        <a class="gallery-link" href="${largeImageURL}">
-                            <img
-                                class="gallery-image"
-                                src="${previewURL}"
-                            />
-                        </a>
-                        <div class="gallery-image-panel">
-                            <div class="gallery-image-panel_item">
-                                <div class="gallery-image-panel_item-field">Likes</div>
-                                <div class="gallery-image-panel_item-value">${likes}</div>
-                            </div>
-                            <div class="gallery-image-panel_item">
-                                <div class="gallery-image-panel_item-field">Views</div>
-                                <div class="gallery-image-panel_item-value">${views}</div>
-                            </div>
-                            <div class="gallery-image-panel_item">
-                                <div class="gallery-image-panel_item-field">Comments</div>
-                                <div class="gallery-image-panel_item-value">${comments}</div>
-                            </div>
-                            <div class="gallery-image-panel_item">
-                                <div class="gallery-image-panel_item-field">Downloads</div>
-                                <div class="gallery-image-panel_item-value">${downloads}</div>
-                            </div>
-                        </div>
-                    </li>
-                `)
-                .join('');
-            
-            galleryList.insertAdjacentHTML('beforeend', galleryMarkup);
-            lightbox.refresh();
-        })
-        .catch(() => {
-            iziToast.error({
-                title: 'Error',
-                message: 'Sorry, there are no images matching your search query. Please try again!',
-            });
-        });
+    currentQuery = q.replace(/\s+/g, '+');
+    currentPage = 1;
+
+    await showImages(currentQuery, currentPage);
+    scrollBy();
+});
+
+loadButton.addEventListener('click', async () => {
+    hideLoadMoreButton();
+    showLoader();
+
+    currentPage++;
+
+    await showImages(currentQuery, currentPage);
+    scrollBy();
 });
