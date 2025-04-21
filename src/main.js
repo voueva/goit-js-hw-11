@@ -10,9 +10,8 @@ const loadButton = document.querySelector('.load-button');
 let currentPage = 1;
 let currentQuery = '';
 
-async function showImages(currentQuery, currentPage) {
-    try {
-        const res = await getImageList(currentQuery, currentPage);
+function showImages(currentQuery, currentPage) {
+    getImageList(currentQuery, currentPage).then(res => {
         const images = res.data.hits;
 
         if (images.length === 0 && currentPage === 1) {
@@ -35,16 +34,16 @@ async function showImages(currentQuery, currentPage) {
                 message: 'Ви переглянули всі результати.',
             });
         }
-    } catch (error) {
+    }).catch((error) => {
         iziToast.error({
             title: 'Помилка',
             message: 'Не вдалося завантажити зображення.',
         });
 
         hideLoadMoreButton();
-    } finally {
+    }).finally(() => {
         hideLoader();
-    }
+    });
 }
 
 searchForm.addEventListener('submit', async (event) => {
