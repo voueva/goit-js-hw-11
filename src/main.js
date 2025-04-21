@@ -43,10 +43,11 @@ function showImages(currentQuery, currentPage) {
         hideLoadMoreButton();
     }).finally(() => {
         hideLoader();
+        scrollBy();
     });
 }
 
-searchForm.addEventListener('submit', async (event) => {
+searchForm.addEventListener('submit', (event) => {
     event.preventDefault();
 
     const q = searchInput.value.trim();
@@ -65,8 +66,7 @@ searchForm.addEventListener('submit', async (event) => {
     currentQuery = q.replace(/\s+/g, '+');
     currentPage = 1;
 
-    await showImages(currentQuery, currentPage);
-    scrollBy();
+    showImages(currentQuery, currentPage);
 });
 
 loadButton.addEventListener('click', async () => {
@@ -75,6 +75,5 @@ loadButton.addEventListener('click', async () => {
 
     currentPage++;
 
-    await showImages(currentQuery, currentPage);
-    scrollBy();
+    showImages(currentQuery, currentPage);
 });
