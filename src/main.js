@@ -3,6 +3,9 @@
 import { getImageList, per_page } from './js/pixabay-api'
 import { createGallery, clearGallery, showLoader, hideLoader, showLoadMoreButton, hideLoadMoreButton, scrollBy } from './js/render-functions'
 
+import iziToast from 'izitoast';
+import 'izitoast/dist/css/iziToast.min.css';
+
 const searchInput = document.querySelector('#searchInput');
 const searchForm = document.querySelector('#searchForm');
 const loadButton = document.querySelector('.load-button');
@@ -35,12 +38,51 @@ function showImages(currentQuery, currentPage) {
             });
         }
     }).catch((error) => {
-        iziToast.error({
-            title: 'Помилка',
-            message: 'Не вдалося завантажити зображення.',
-        });
-
         hideLoadMoreButton();
+
+        if (axios.isAxiosError(error)) {
+            if (error.response) {
+                const status = error.response.status;
+
+                if (status === 403) {
+                    iziToast.error({
+                        title: 'Доступ заборонено',
+                        message: 'Можливо, ваш API ключ недійсний або вичерпано ліміт.',
+                    });
+                } else if (status === 404) {
+                    iziToast.warning({
+                        title: 'Не знайдено',
+                        message: 'Ресурс не існує. Спробуйте змінити запит.',
+                    });
+                } else if (status >= 500) {
+                    iziToast.error({
+                        title: 'Серверна помилка',
+                        message: 'Сервер не відповідає. Спробуйте пізніше.',
+                    });
+                } else {
+                    iziToast.error({
+                        title: `Помилка ${status}`,
+                        message: error.response.statusText || 'Невідома помилка',
+                    });
+                }
+
+            } else if (error.request) {
+                iziToast.error({
+                    title: 'Немає відповіді від сервера',
+                    message: 'Перевірте інтернет-з’єднання або спробуйте ще раз.',
+                });
+            } else {
+                iziToast.error({
+                    title: 'Налаштування запиту',
+                    message: 'Щось пішло не так при налаштуванні запиту.',
+                });
+            }
+        } else {
+            iziToast.error({
+                title: 'Неочікувана помилка',
+                message: 'Щось пішло не так. Спробуйте ще раз.',
+            });
+        }
     }).finally(() => {
         hideLoader();
         scrollBy();
